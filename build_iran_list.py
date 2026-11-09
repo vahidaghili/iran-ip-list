@@ -68,7 +68,26 @@ def main():
     if len(ram) < 500 or len(ripe) < 1000:
         sys.exit(f"Source looks broken (ramtiiin={len(ram)}, ripe={len(ripe)}); not writing output.")
 
-    merged = list(ipaddress.collapse_addresses(n for n in ram + ripe + extra + local if n.version == 4))
+    def sane(n):
+        # Guard against a bad/hostile upstream entry (e.g. 0.0.0.0/1) that would
+        # silently route most traffic outside the tunnel.
+        return n.version == 4 and n.prefixlen >= 8 and not (
+            n.is_multicast or n.is_reserved or n.is_loopback or n.is_link_local or n.is_unspecified
+        )
+
+    rejected = [n for n in ram + ripe + extra if not sane(n)]
+    if rejected:
+        print(f"WARNING: dropped {len(rejected)} suspicious entries: {rejected[:10]}", file=sys.stderr)
+    merged = list(ipaddress.collapse_addresses([n for n in ram + ripe + extra if sane(n)] + local))
+
+    # Fail if coverage grows sharply compared with the previous build.
+    if out.exists():
+        prev = [ipaddress.ip_network(x) for x in re.findall(r"address=([0-9./]+)", out.read_text())]
+        prev_total = sum(n.num_addresses for n in prev)
+        new_total = sum(n.num_addresses for n in merged)
+        if prev_total and new_total > prev_total * 1.2:
+            sys.exit(f"Address count jumped {prev_total} -> {new_total} (>20%); refusing to write. Review sources.")
+
     lines = ["/ip firewall address-list"]
     lines += [f"add address={n} list={LIST_NAME}" for n in merged]
     out.write_text("\n".join(lines) + "\n")
