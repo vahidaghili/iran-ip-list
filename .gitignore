@@ -1,0 +1,4 @@
+# Router configs / WireGuard keys stay local
+*.conf
+wg_config*.rsc
+peers.txt

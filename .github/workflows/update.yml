@@ -1,0 +1,34 @@
+name: Update Iran IP list
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # daily 02:00 UTC
+  workflow_dispatch:
+  push:
+    paths:
+      - extra-ranges.txt
+      - build_iran_list.py
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build list
+        run: python3 build_iran_list.py iran-ip-merged.rsc
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- iran-ip-merged.rsc; then
+            echo "No changes"; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add iran-ip-merged.rsc
+          git commit -m "Update Iran IP list ($(grep -c '^add' iran-ip-merged.rsc) entries)"
+          git push
