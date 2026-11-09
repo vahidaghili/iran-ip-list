@@ -12,7 +12,7 @@ A GitHub Action rebuilds `iran-ip-merged.rsc` daily. It also rebuilds on every c
 
 ## Usage on MikroTik
 ```
-/tool fetch url="https://raw.githubusercontent.com/OWNER/REPO/main/iran-ip-merged.rsc" dst-path=ip-list.rsc
+/tool fetch url="https://raw.githubusercontent.com/vahidaghili/iran-ip-list/main/iran-ip-merged.rsc" dst-path=ip-list.rsc
 /ip firewall address-list remove [find list=IRAN]
 /import file-name=ip-list.rsc
 ```
