@@ -9,6 +9,7 @@ Sources (union, then collapsed):
 
 Usage:  python3 build_iran_list.py [output.rsc]
 """
+import hashlib
 import ipaddress
 import json
 import re
@@ -90,7 +91,10 @@ def main():
 
     lines = ["/ip firewall address-list"]
     lines += [f"add address={n} list={LIST_NAME}" for n in merged]
-    out.write_text("\n".join(lines) + "\n")
+    content = "\n".join(lines) + "\n"
+    out.write_text(content)
+    # Small hash file so routers can skip re-importing when nothing changed.
+    out.with_suffix(".sha256").write_text(hashlib.sha256(content.encode()).hexdigest())
     print(f"ramtiiin={len(ram)} ripe={len(ripe)} extra={len(extra)} -> {len(merged)} entries -> {out}")
 
 
